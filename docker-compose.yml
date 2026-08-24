@@ -1,0 +1,29 @@
+services:
+  api:
+    build: .
+    image: ${DOCKER_HUB_USERNAME:-yourusername}/crypto-ops-fastapi:latest
+    ports:
+      - "${API_PORT:-8000}:8000"
+    env_file:
+      - .env
+    environment:
+      MLFLOW_TRACKING_URI: sqlite:///mlflow.db
+    volumes:
+      - ./data:/app/data
+      - ./mlruns:/app/mlruns
+      - ./models:/app/models
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  streamlit:
+    build: .
+    command: streamlit run frontend/dashboard.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    environment:
+      API_URL: http://api:8000
+    depends_on:
+      - api
+    restart: unless-stopped

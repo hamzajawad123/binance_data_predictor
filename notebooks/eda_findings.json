@@ -1,0 +1,240 @@
+{
+  "source": "/content/raw.csv",
+  "shape": [
+    51840,
+    19
+  ],
+  "columns": [
+    "open_time",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume",
+    "close_time",
+    "quote_volume",
+    "trades",
+    "taker_buy_base",
+    "taker_buy_quote",
+    "symbol",
+    "log_return",
+    "abs_return",
+    "candle_range",
+    "hour",
+    "dow",
+    "vol_24h_hist",
+    "vol_24h"
+  ],
+  "symbols": [
+    "BNBUSDT",
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT"
+  ],
+  "time_min": "2025-02-24 15:00:00+00:00",
+  "time_max": "2026-08-18 14:00:00+00:00",
+  "issues": {
+    "null_cells": 0,
+    "dup_full_row": 0,
+    "dup_symbol_open_time": 0,
+    "high_lt_low": 0,
+    "high_below_open_or_close": 0,
+    "low_above_open_or_close": 0,
+    "nonpositive_ohlc": 0,
+    "negative_volume": 0,
+    "zero_volume": 0,
+    "trades_negative": 0
+  },
+  "hourly_gaps": [
+    {
+      "symbol": "BNBUSDT",
+      "n_rows": 12960,
+      "missing_hours": 0,
+      "max_gap_hours": 1.0,
+      "min_gap_hours": 1.0
+    },
+    {
+      "symbol": "BTCUSDT",
+      "n_rows": 12960,
+      "missing_hours": 0,
+      "max_gap_hours": 1.0,
+      "min_gap_hours": 1.0
+    },
+    {
+      "symbol": "ETHUSDT",
+      "n_rows": 12960,
+      "missing_hours": 0,
+      "max_gap_hours": 1.0,
+      "min_gap_hours": 1.0
+    },
+    {
+      "symbol": "SOLUSDT",
+      "n_rows": 12960,
+      "missing_hours": 0,
+      "max_gap_hours": 1.0,
+      "min_gap_hours": 1.0
+    }
+  ],
+  "return_kurtosis": {
+    "BNBUSDT": 11.968545590751077,
+    "BTCUSDT": 11.171378916155032,
+    "ETHUSDT": 12.807262875034558,
+    "SOLUSDT": 11.908637198254803
+  },
+  "return_skew": {
+    "BNBUSDT": -0.6562949281792732,
+    "BTCUSDT": -0.32972473154521775,
+    "ETHUSDT": -0.12295990920850602,
+    "SOLUSDT": 0.11089478031425662
+  },
+  "autocorr": [
+    {
+      "symbol": "BNBUSDT",
+      "ret_ac1": 0.0010710583422369254,
+      "ret_ac24": 0.00189995983968183,
+      "vol_ac1": 0.9902322393117522,
+      "vol_ac24": 0.5930285486034349
+    },
+    {
+      "symbol": "BTCUSDT",
+      "ret_ac1": -0.0055169281695681355,
+      "ret_ac24": 0.0017943870420275827,
+      "vol_ac1": 0.9878816248536597,
+      "vol_ac24": 0.49901100918694913
+    },
+    {
+      "symbol": "ETHUSDT",
+      "ret_ac1": 0.01721906861072935,
+      "ret_ac24": -0.0031964006547218616,
+      "vol_ac1": 0.9838079713034432,
+      "vol_ac24": 0.4386553180328874
+    },
+    {
+      "symbol": "SOLUSDT",
+      "ret_ac1": 0.008092764963186398,
+      "ret_ac24": -0.006881358307076218,
+      "vol_ac1": 0.9863420284569971,
+      "vol_ac24": 0.5075113564694465
+    }
+  ],
+  "corr_with_target": {
+    "open": -0.270556986019262,
+    "high": -0.27020987735457147,
+    "low": -0.27098873244915855,
+    "close": -0.27062598535442195,
+    "volume": 0.37498005328623757,
+    "trades": 0.2729072891138139,
+    "log_return": -0.033815761290602195,
+    "candle_range": 0.4620474691401513,
+    "vol_24h_hist": 0.5804503175214893,
+    "vol_24h": 1.0
+  },
+  "cross_asset_return_corr": {
+    "BNBUSDT": {
+      "BNBUSDT": 1.0,
+      "BTCUSDT": 0.7318492258843061,
+      "ETHUSDT": 0.7416164115167899,
+      "SOLUSDT": 0.7273057851686368
+    },
+    "BTCUSDT": {
+      "BNBUSDT": 0.7318492258843061,
+      "BTCUSDT": 1.0,
+      "ETHUSDT": 0.8399169964365628,
+      "SOLUSDT": 0.8048905624321135
+    },
+    "ETHUSDT": {
+      "BNBUSDT": 0.7416164115167899,
+      "BTCUSDT": 0.8399169964365628,
+      "ETHUSDT": 1.0,
+      "SOLUSDT": 0.8310517077367848
+    },
+    "SOLUSDT": {
+      "BNBUSDT": 0.7273057851686368,
+      "BTCUSDT": 0.8048905624321135,
+      "ETHUSDT": 0.8310517077367848,
+      "SOLUSDT": 1.0
+    }
+  },
+  "iqr_outlier_share": [
+    {
+      "col": "log_return",
+      "symbol": "BNBUSDT",
+      "iqr_outlier_share": 0.07168209876543209
+    },
+    {
+      "col": "log_return",
+      "symbol": "BTCUSDT",
+      "iqr_outlier_share": 0.0724537037037037
+    },
+    {
+      "col": "log_return",
+      "symbol": "ETHUSDT",
+      "iqr_outlier_share": 0.07893518518518519
+    },
+    {
+      "col": "log_return",
+      "symbol": "SOLUSDT",
+      "iqr_outlier_share": 0.06512345679012346
+    },
+    {
+      "col": "volume",
+      "symbol": "BNBUSDT",
+      "iqr_outlier_share": 0.08464506172839506
+    },
+    {
+      "col": "volume",
+      "symbol": "BTCUSDT",
+      "iqr_outlier_share": 0.07592592592592592
+    },
+    {
+      "col": "volume",
+      "symbol": "ETHUSDT",
+      "iqr_outlier_share": 0.07546296296296297
+    },
+    {
+      "col": "volume",
+      "symbol": "SOLUSDT",
+      "iqr_outlier_share": 0.07098765432098765
+    },
+    {
+      "col": "candle_range",
+      "symbol": "BNBUSDT",
+      "iqr_outlier_share": 0.05740740740740741
+    },
+    {
+      "col": "candle_range",
+      "symbol": "BTCUSDT",
+      "iqr_outlier_share": 0.0587962962962963
+    },
+    {
+      "col": "candle_range",
+      "symbol": "ETHUSDT",
+      "iqr_outlier_share": 0.05941358024691358
+    },
+    {
+      "col": "candle_range",
+      "symbol": "SOLUSDT",
+      "iqr_outlier_share": 0.05339506172839506
+    },
+    {
+      "col": "vol_24h",
+      "symbol": "BNBUSDT",
+      "iqr_outlier_share": 0.039274691358024694
+    },
+    {
+      "col": "vol_24h",
+      "symbol": "BTCUSDT",
+      "iqr_outlier_share": 0.04344135802469136
+    },
+    {
+      "col": "vol_24h",
+      "symbol": "ETHUSDT",
+      "iqr_outlier_share": 0.030324074074074073
+    },
+    {
+      "col": "vol_24h",
+      "symbol": "SOLUSDT",
+      "iqr_outlier_share": 0.03564814814814815
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+[
+  "log_return",
+  "abs_return",
+  "vol_6h",
+  "vol_24h_hist",
+  "vol_72h",
+  "vol_term_structure",
+  "candle_range",
+  "bb_width",
+  "bb_pct",
+  "rsi_14",
+  "sma_ratio",
+  "ema_ratio",
+  "log_volume",
+  "volume_z",
+  "trades_z",
+  "taker_buy_ratio",
+  "shock_volume",
+  "hour",
+  "dow",
+  "symbol_id"
+]

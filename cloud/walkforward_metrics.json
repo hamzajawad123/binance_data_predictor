@@ -1,0 +1,18 @@
+{
+  "error_distribution": {
+    "n": 258837,
+    "mean_error": 0.0004428777804642526,
+    "std_error": 0.0036199188019777873,
+    "skew": -2.7235759893365104,
+    "excess_kurtosis": 28.407755315971098,
+    "pct_overpredict": 0.6638540857759903,
+    "p50_abs_error": 0.001708014230044655,
+    "p95_abs_error": 0.006599017872534299
+  },
+  "gate": {
+    "beats_persistence_rmse": true,
+    "beats_har_rv_rmse": true,
+    "pass": true
+  },
+  "n_folds": 16
+}

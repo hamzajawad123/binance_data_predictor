@@ -1,0 +1,58 @@
+schema: '2.0'
+stages:
+  collect:
+    cmd: python -m backend.src.data_collection
+    deps:
+    - path: backend/src/data_collection.py
+      hash: md5
+      md5: 766b13d6b49472aea41d26038b11a17f
+      size: 6983
+    outs:
+    - path: data/raw.parquet
+      hash: md5
+      md5: fe7cb4148c4415e140ed5785cf4099f0
+      size: 3866530
+  features:
+    cmd: python -m backend.src.eda_feature_eng
+    deps:
+    - path: data/raw.parquet
+      hash: md5
+      md5: fe7cb4148c4415e140ed5785cf4099f0
+      size: 3866530
+    - path: backend/src/eda_feature_eng.py
+      hash: md5
+      md5: fa66323f979f6821f7f63977b7701cda
+      size: 7862
+    outs:
+    - path: data/features.parquet
+      hash: md5
+      md5: e82a1a2b6a49672a7df6f789bec95153
+      size: 8930291
+  train:
+    cmd: python -m backend.src.train
+    deps:
+    - path: data/features.parquet
+      hash: md5
+      md5: e82a1a2b6a49672a7df6f789bec95153
+      size: 8930291
+    - path: backend/src/evaluate.py
+      hash: md5
+      md5: 93e5b1137b19f75f1fe9027e716fd7d6
+      size: 5224
+    - path: backend/src/train.py
+      hash: md5
+      md5: 3e58f444e8c33cc61346aa7851942e0b
+      size: 6636
+    outs:
+    - path: models/feature_columns.json
+      hash: md5
+      md5: e6ca7f64700994ba9070fcde331c7024
+      size: 220
+    - path: models/model.joblib
+      hash: md5
+      md5: 8d51932518ed117aed48f19b07e03946
+      size: 931925
+    - path: models/train_metrics.json
+      hash: md5
+      md5: cf9f243c9e1f83694deede969286494b
+      size: 1884

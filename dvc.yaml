@@ -1,0 +1,28 @@
+stages:
+  collect:
+    cmd: python -m backend.src.data_collection
+    deps:
+      - backend/src/data_collection.py
+    outs:
+      - data/raw.parquet:
+          persist: true
+
+  features:
+    cmd: python -m backend.src.eda_feature_eng
+    deps:
+      - data/raw.parquet
+      - backend/src/eda_feature_eng.py
+    outs:
+      - data/features.parquet:
+          persist: true
+
+  train:
+    cmd: python -m backend.src.train
+    deps:
+      - data/features.parquet
+      - backend/src/train.py
+      - backend/src/evaluate.py
+    outs:
+      - models/model.joblib
+      - models/train_metrics.json
+      - models/feature_columns.json
