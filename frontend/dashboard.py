@@ -60,8 +60,19 @@ st.markdown(
         padding: 0.9rem 1.05rem;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
       }
-      [data-testid="stMetricLabel"] { color: #8B97B0; }
-      [data-testid="stMetricValue"] { font-weight: 700; }
+      [data-testid="stMetricLabel"],
+      [data-testid="stMetricLabel"] p,
+      [data-testid="stMetricLabel"] div {
+        color: #E8ECF4 !important;
+        font-weight: 700 !important;
+      }
+      [data-testid="stMetricValue"] {
+        font-weight: 800 !important;
+        color: #E8ECF4 !important;
+      }
+      [data-testid="stMetricDelta"] {
+        font-weight: 700 !important;
+      }
 
       div[data-testid="stExpander"] {
         background: #151C2E;
@@ -190,6 +201,13 @@ st.markdown(
       .howto ol { margin: 0.35rem 0 0 1.1rem; padding: 0; }
       .howto li { margin: 0.25rem 0; }
 
+      .progress-note {
+        color: #E8ECF4;
+        font-size: 0.95rem;
+        font-weight: 700;
+        line-height: 1.5;
+        margin: 0.35rem 0 0.55rem 0;
+      }
       .footer-bar {
         color: #8B97B0;
         font-size: 0.82rem;
@@ -448,7 +466,11 @@ score_metrics = score_payload.get("metrics") or {}
 
 section_head(
     f"{meta['name']} · next 24 hours",
-    f"{symbol}  ·  based on the {as_of} hourly candle  ·  market feel: {mood}",
+    bullets=[
+        f"Market: {symbol}",
+        f"Based on: {as_of} hourly candle (not live).",
+        f"Market feel: {mood}",
+    ],
 )
 note_box(
     "Not a live ticker",
@@ -503,7 +525,11 @@ note_box(
 
 if threshold:
     ratio = min(max(pred_vol / float(threshold), 0.0), 1.0)
-    st.caption("How close today’s guess is to the “unusually jumpy” line (100% = on the line).")
+    st.markdown(
+        '<p class="progress-note">This bar fills up as the guess gets closer to an unusually jumpy day. '
+        "A full bar means we are at or past that warning line.</p>",
+        unsafe_allow_html=True,
+    )
     st.progress(ratio)
 
 section_head(
