@@ -25,41 +25,16 @@ COIN_META = {
     "BNBUSDT": {"name": "BNB", "ticker": "BNB"},
     "SOLUSDT": {"name": "Solana", "ticker": "SOL"},
 }
-FEATURE_GUIDE = {
-    "log_return": ("This hour's move", "Log return vs the previous hour. Sign shows direction."),
-    "abs_return": ("Move size", "Same return with direction removed."),
-    "vol_6h": ("6h jumpiness", "Std of hourly returns over the last 6 hours."),
-    "vol_24h_hist": ("24h jumpiness", "Std of hourly returns over the last 24 hours (naive baseline)."),
-    "vol_72h": ("3-day jumpiness", "Std of hourly returns over the last 72 hours."),
-    "vol_term_structure": ("Short vs day vol", ">1 means the last few hours were wilder than the last day."),
-    "candle_range": ("Candle width", "(High − low) / close for this hour."),
-    "bb_width": ("Bollinger width", "How stretched recent prices are."),
-    "bb_pct": ("Band position", ">1 is above the upper band; <0 is below the lower band."),
-    "rsi_14": ("RSI (14)", "Momentum. Around 70+ is often stretched high; 30− stretched low."),
-    "sma_ratio": ("SMA trend", "10h SMA / 50h SMA. >1 is a short-term uptrend."),
-    "ema_ratio": ("EMA trend", "12h EMA / 26h EMA. >1 is a short-term uptrend."),
-    "log_volume": ("Log volume", "Log of traded volume so huge hours do not dominate."),
-    "volume_z": ("Volume surprise", "How unusual volume is vs the last ~20 hours. >0 is busier."),
-    "trades_z": ("Trade-count surprise", "Same idea for number of trades."),
-    "taker_buy_ratio": ("Buy pressure", "Share of volume that was aggressive buys. >0.5 leans buy-side."),
-    "shock_volume": ("Shock × volume", "Wide candle combined with unusual volume."),
-    "hour": ("Hour (UTC)", "Hour of the candle, 0–23."),
-    "dow": ("Day of week", "0 = Monday … 6 = Sunday."),
-    "symbol_id": ("Coin id", "BTC=0, ETH=1, BNB=2, SOL=3."),
-}
 WINDOW_MAP = {"Last 3 days": 72, "Last 7 days": 168, "Last 14 days": 336, "Last 30 days": 720}
 
-PLOT_FONT = dict(color="#E8ECF4", family="Segoe UI, Inter, sans-serif")
+PLOT_FONT = dict(color="#E8ECF4", family="Inter, Segoe UI, sans-serif")
 PLOT_AXIS = dict(gridcolor="#243044", zeroline=False, linecolor="#243044")
 GOLD = "#E8B931"
 TEAL_UP = "#2ECC9A"
 RED_DOWN = "#F07178"
-FOCUS_BLUE = "#6EA8FF"
-FOCUS_YELLOW = "#E8B931"
-FOCUS_RED = "#F07178"
 
 st.set_page_config(
-    page_title="Crypto Vol Forecast",
+    page_title="Crypto jumpiness forecast",
     page_icon="◈",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -68,17 +43,156 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-      .block-container { padding-top: 1.6rem; padding-bottom: 2.4rem; max-width: 1180px; }
-      header[data-testid="stHeader"] { background: rgba(11, 16, 32, 0.85); }
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+      html, body, [class*="css"] { font-family: Inter, Segoe UI, sans-serif; }
+      .block-container { padding-top: 1.15rem; padding-bottom: 2.4rem; max-width: 1180px; }
+      header[data-testid="stHeader"] { background: rgba(11, 16, 32, 0.92); border-bottom: 1px solid #243044; }
       [data-testid="stSidebar"] { background: #0E1526; border-right: 1px solid #243044; }
+      [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { letter-spacing: 0.01em; }
+
       [data-testid="stMetric"] {
         background: #151C2E;
         border: 1px solid #243044;
         border-radius: 14px;
-        padding: 0.85rem 1rem;
+        padding: 0.9rem 1.05rem;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
       }
       [data-testid="stMetricLabel"] { color: #8B97B0; }
-      div[data-testid="stExpander"] { background: #151C2E; border: 1px solid #243044; border-radius: 12px; }
+      [data-testid="stMetricValue"] { font-weight: 700; }
+
+      div[data-testid="stExpander"] {
+        background: #151C2E;
+        border: 1px solid #243044;
+        border-radius: 14px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        background: linear-gradient(180deg, #151C2E 0%, #10182A 100%);
+        border: 1px solid #243044;
+        border-radius: 16px;
+        padding: 0.95rem 1.2rem;
+        margin-bottom: 0.85rem;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+      }
+      .brand-mark {
+        width: 38px;
+        height: 38px;
+        border-radius: 11px;
+        background: rgba(232, 185, 49, 0.14);
+        border: 1px solid rgba(232, 185, 49, 0.45);
+        color: #E8B931;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .brand-title { color: #E8ECF4; font-size: 1.12rem; font-weight: 700; line-height: 1.2; }
+      .brand-sub { color: #8B97B0; font-size: 0.86rem; margin-top: 0.15rem; }
+      .nav-chip {
+        background: rgba(110, 168, 255, 0.12);
+        border: 1px solid rgba(110, 168, 255, 0.35);
+        color: #9EC4FF;
+        border-radius: 999px;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.78rem;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .section-head {
+        background: #151C2E;
+        border: 1px solid #243044;
+        border-radius: 16px;
+        padding: 0.95rem 1.15rem 0.9rem;
+        margin: 0.85rem 0 0.85rem;
+      }
+      .section-head h2 {
+        color: #E8ECF4;
+        font-size: 1.22rem;
+        font-weight: 700;
+        margin: 0 0 0.28rem 0;
+      }
+      .section-head p {
+        color: #8B97B0;
+        font-size: 0.92rem;
+        margin: 0;
+        line-height: 1.45;
+      }
+
+      .note-card {
+        border-radius: 14px;
+        padding: 0.9rem 1.1rem;
+        margin: 0.55rem 0 0.7rem 0;
+        border: 1px solid;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.14);
+      }
+      .note-kicker {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 0.35rem;
+      }
+      .note-body {
+        font-size: 1.02rem;
+        font-weight: 600;
+        line-height: 1.5;
+      }
+      .note-blue {
+        background: rgba(110, 168, 255, 0.10);
+        border-color: rgba(110, 168, 255, 0.55);
+      }
+      .note-blue .note-kicker, .note-blue .note-body { color: #8FBEFF; }
+      .note-yellow {
+        background: rgba(232, 185, 49, 0.10);
+        border-color: rgba(232, 185, 49, 0.55);
+      }
+      .note-yellow .note-kicker, .note-yellow .note-body { color: #F0D06A; }
+      .note-red {
+        background: rgba(240, 113, 120, 0.10);
+        border-color: rgba(240, 113, 120, 0.55);
+      }
+      .note-red .note-kicker, .note-red .note-body { color: #F59AA0; }
+
+      .howto {
+        background: #151C2E;
+        border: 1px solid #243044;
+        border-radius: 14px;
+        padding: 0.85rem 1rem;
+        color: #C5CDDC;
+        font-size: 0.92rem;
+        line-height: 1.5;
+        margin-bottom: 0.7rem;
+      }
+      .howto ol { margin: 0.35rem 0 0 1.1rem; padding: 0; }
+      .howto li { margin: 0.25rem 0; }
+
+      .footer-bar {
+        color: #8B97B0;
+        font-size: 0.82rem;
+        text-align: center;
+        border: 1px solid #243044;
+        border-radius: 12px;
+        padding: 0.65rem 0.8rem;
+        margin-top: 0.6rem;
+        background: #12192A;
+      }
+
+      div[data-testid="stButton"] > button {
+        border-radius: 12px;
+        font-weight: 650;
+        min-height: 2.6rem;
+      }
     </style>
     """,
     unsafe_allow_html=True,
@@ -170,17 +284,33 @@ def vol_label(daily: float) -> str:
     return "High"
 
 
-def focus_note(text: str, color: str) -> None:
+def note_box(title: str, body: str, tone: str) -> None:
     st.markdown(
-        f'<p style="color:{color};font-weight:700;font-size:1.08rem;line-height:1.45;'
-        f'margin:0.55rem 0 0.75rem 0;">{text}</p>',
+        f"""
+        <div class="note-card note-{tone}">
+          <div class="note-kicker">{escape(title)}</div>
+          <div class="note-body">{escape(body)}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def section_head(title: str, subtitle: str) -> None:
+    st.markdown(
+        f"""
+        <div class="section-head">
+          <h2>{escape(title)}</h2>
+          <p>{escape(subtitle)}</p>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
 
 def apply_chart_layout(fig: go.Figure, height: int, y_title: str) -> go.Figure:
-    title_font = dict(color="#E8ECF4", family="Segoe UI, Inter, sans-serif", size=14)
-    tick_font = dict(color="#E8ECF4", family="Segoe UI, Inter, sans-serif", size=12)
+    title_font = dict(color="#E8ECF4", family="Inter, Segoe UI, sans-serif", size=14)
+    tick_font = dict(color="#E8ECF4", family="Inter, Segoe UI, sans-serif", size=12)
     fig.update_layout(
         height=height,
         paper_bgcolor="rgba(0,0,0,0)",
@@ -210,39 +340,66 @@ if "view_symbol" not in st.session_state:
 if "view_window" not in st.session_state:
     st.session_state.view_window = "Last 7 days"
 
+st.markdown(
+    """
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-mark">◈</div>
+        <div>
+          <div class="brand-title">Crypto jumpiness forecast</div>
+          <div class="brand-sub">How bumpy the next 24 hours may be — not whether price goes up or down</div>
+        </div>
+      </div>
+      <div class="nav-chip">Pick a coin below</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+nav_cols = st.columns(4)
+for col, symbol_key in zip(nav_cols, SYMBOLS):
+    with col:
+        active = st.session_state.view_symbol == symbol_key
+        if st.button(
+            COIN_META[symbol_key]["name"],
+            type="primary" if active else "secondary",
+            use_container_width=True,
+            key=f"nav_{symbol_key}",
+        ):
+            st.session_state.view_symbol = symbol_key
+
+st.radio(
+    "How much history to show on the charts",
+    list(WINDOW_MAP),
+    horizontal=True,
+    key="view_window",
+    help="This only changes the charts. It does not change the 24-hour forecast.",
+)
+
 with st.sidebar:
-    st.header("Controls")
-    st.caption("Choose a market, then click **Update forecast** to load it.")
-
-    labels = [f"{COIN_META[s]['name']}  ({s})" for s in SYMBOLS]
-    pending_label = st.selectbox(
-        "Coin",
-        labels,
-        index=SYMBOLS.index(st.session_state.view_symbol),
-        help="The market to forecast. The page will not change until you click Update forecast.",
+    st.header("How to use")
+    st.markdown(
+        """
+        <div class="howto">
+          <ol>
+            <li>Tap a coin in the top bar.</li>
+            <li>Pick how much history you want to see.</li>
+            <li>Read the colored boxes first — they explain the number in plain words.</li>
+          </ol>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
-    pending_symbol = SYMBOLS[labels.index(pending_label)]
-
-    pending_window = st.selectbox(
-        "History range",
-        list(WINDOW_MAP),
-        index=list(WINDOW_MAP).index(st.session_state.view_window),
-        help="How many past hourly candles to draw on the charts. This does not change the forecast itself — only how much history you see.",
+    note_box(
+        "What this page does",
+        "It guesses how jumpy the next 24 hours may be. It does not guess if the price will go up or down.",
+        "yellow",
     )
-
-    apply_clicked = st.button("Update forecast", type="primary", use_container_width=True)
-    if apply_clicked:
-        st.session_state.view_symbol = pending_symbol
-        st.session_state.view_window = pending_window
-
-    pending = pending_symbol != st.session_state.view_symbol or pending_window != st.session_state.view_window
-    if pending:
-        st.info("Your selection is not applied yet. Click **Update forecast**.")
-
-    st.divider()
-    focus_note("This app forecasts how jumpy the next 24 hours may be. It does not predict whether price will go up or down.", FOCUS_YELLOW)
-    focus_note("Not financial advice. Forecasts can be wrong. Do not trade solely on this number.", FOCUS_RED)
-    st.caption("Streamlit Community Cloud demo — may sleep after idle time. Not a 24/7 service.")
+    note_box(
+        "Please read",
+        "This is not financial advice. The guess can be wrong. Do not buy or sell based only on this page.",
+        "red",
+    )
 
 symbol = st.session_state.view_symbol
 window_label = st.session_state.view_window
@@ -258,7 +415,7 @@ try:
     )
 except Exception as exc:
     st.title("Could not load a forecast")
-    st.write("Need either a running API or a local/cloud model bundle (`cloud/` or `data/` + `models/`).")
+    st.write("This page needs a running API, or a saved model bundle in `cloud/` or `data/` + `models/`.")
     st.exception(exc)
     st.stop()
 
@@ -273,70 +430,76 @@ as_of = fmt_ts(prediction.get("event_timestamp"))
 mood = vol_label(daily_vol)
 model_ok = bool(health.get("model_loaded"))
 score_metrics = score_payload.get("metrics") or {}
+source_line = "using the trained model" if model_ok else "using a simple backup method because the trained model is not loaded"
 
-st.title(f"{meta['name']} volatility forecast")
-st.subheader(f"{symbol} · next 24 hours")
-st.caption(
-    f"Based on the {as_of} hourly candle. "
-    f"{'Using the trained model.' if model_ok else 'Using the persistence baseline (model not loaded).'}"
+section_head(
+    f"{meta['name']} · next 24 hours",
+    f"{symbol}  ·  based on the {as_of} hourly candle  ·  {source_line}  ·  market feel: {mood}",
 )
-focus_note("This is not live tick data.", FOCUS_YELLOW)
+note_box(
+    "Not a live ticker",
+    "This page does not update every second. It uses the latest hourly candle we have, not live tick-by-tick prices.",
+    "yellow",
+)
 
-st.divider()
-st.header("Forecast")
-st.caption(f"Regime: **{mood}** · Alert: **{'on' if alert else 'off'}**")
+section_head(
+    "Today’s guess",
+    "Four headline numbers, then a short explanation in the boxes below.",
+)
 
 m1, m2, m3, m4 = st.columns(4)
-m1.metric("Expected 1-day vol", f"{daily_vol:.2%}")
-m2.metric("Hourly vol (model)", f"{pred_vol:.4%}")
-m3.metric(f"{meta['ticker']} close", f"{close:,.2f}" if close else "n/a")
+m1.metric("Typical 1-day jump", f"{daily_vol:.2%}")
+m2.metric("Hour-by-hour jumpiness", f"{pred_vol:.4%}")
+m3.metric(f"{meta['ticker']} last price", f"{close:,.2f}" if close else "n/a")
 if threshold is not None:
     gap_pct = (pred_vol / float(threshold) - 1.0) * 100.0
-    m4.metric("Vs alert line", f"{gap_pct:+.1f}%", delta="above" if alert else "below")
+    m4.metric("Vs unusually-jumpy line", f"{gap_pct:+.1f}%", delta="above" if alert else "below")
 else:
-    m4.metric("Vs alert line", "n/a")
+    m4.metric("Vs unusually-jumpy line", "n/a")
 
 if daily_lo is not None and daily_hi is not None:
-    focus_note(
-        f"Typical 1-day range from past forecast errors: {float(daily_lo):.2%} – {float(daily_hi):.2%}. "
-        "This is a wide statistical band, not a guarantee.",
-        FOCUS_YELLOW,
+    note_box(
+        "Likely range, not a promise",
+        f"From past misses, a typical 1-day jump often lands between {float(daily_lo):.2%} and {float(daily_hi):.2%}. "
+        "That band is wide on purpose. It is a guess of how bumpy the day may be, not a guarantee.",
+        "yellow",
     )
 
 if alert:
-    focus_note(
-        escape(
-            prediction.get("alert_reason")
-            or "Predicted volatility is at or above the 90th percentile of the last 30 days."
-        ),
-        FOCUS_RED,
+    note_box(
+        "Head-up: unusually jumpy",
+        f"The model thinks {meta['name']} may be more jumpy than on most of the last 30 days. "
+        "That is a warning about bumpiness, not a call to buy or sell.",
+        "red",
     )
 else:
-    focus_note(
-        f"The model expects about a {daily_vol:.1%} typical daily move. "
-        "That is below this coin’s high-volatility alert line.",
-        FOCUS_BLUE,
+    note_box(
+        "All clear vs the jumpy line",
+        f"The model thinks a typical 1-day move is about {daily_vol:.1%}. "
+        "That sits below this coin’s “unusually jumpy” line.",
+        "blue",
     )
 
-focus_note(
-    f"If this forecast is right, {escape(meta['name'])}'s hourly moves over the next day "
-    f"should look about as jumpy as a {daily_vol:.1%} one-day standard deviation. "
-    "This is not a prediction of the next price.",
-    FOCUS_BLUE,
+note_box(
+    "What this number means",
+    f"If this guess is right, {meta['name']}'s moves over the next day should look about as jumpy as a {daily_vol:.1%} "
+    "one-day bump. This is not a prediction of the next price.",
+    "blue",
 )
 
 if threshold:
     ratio = min(max(pred_vol / float(threshold), 0.0), 1.0)
-    st.caption("Predicted hourly vol relative to the 30-day 90th-percentile alert line")
+    st.caption("How close today’s guess is to the “unusually jumpy” line (100% = on the line).")
     st.progress(ratio)
 
-st.divider()
-st.header("Price history")
-st.caption(f"{meta['ticker']} hourly candles · {window_label.lower()}")
+section_head(
+    "Price history",
+    f"{meta['ticker']} hourly candles for the {window_label.lower()}. Green hours closed higher; red hours closed lower.",
+)
 
 candles = pd.DataFrame(candle_payload.get("candles", []))
 if candles.empty:
-    st.info("No candles available for this coin.")
+    note_box("No price chart yet", "There is no candle history for this coin on this page.", "yellow")
 else:
     candles["time"] = pd.to_datetime(candles["time"])
     fig = go.Figure(
@@ -358,13 +521,15 @@ else:
     apply_chart_layout(fig, 460, "Price (USDT)")
     st.plotly_chart(fig, use_container_width=True)
 
-st.divider()
-st.header("Volatility history")
-st.caption("Past 24-hour realized volatility vs the model’s next-24h forecast")
+section_head(
+    "How jumpy it has been",
+    "Blue line = how jumpy the last 24 hours really were. Gold dot = today’s guess for the next 24 hours. "
+    "Dashed red line = the unusually-jumpy warning line.",
+)
 
 realized = pd.DataFrame(candle_payload.get("realized_vol", []))
 if realized.empty:
-    st.info("No realized-vol history available for this coin.")
+    note_box("No jumpiness history yet", "There is no past jumpiness series for this coin on this page.", "yellow")
 else:
     realized["time"] = pd.to_datetime(realized["time"])
     vol_fig = go.Figure()
@@ -372,7 +537,7 @@ else:
         go.Scatter(
             x=realized["time"],
             y=realized["vol_24h_hist"],
-            name="Realized (past 24h)",
+            name="How jumpy the last 24h were",
             mode="lines",
             line=dict(color="#6C8CFF", width=2),
             fill="tozeroy",
@@ -384,7 +549,7 @@ else:
         go.Scatter(
             x=[last_time],
             y=[pred_vol],
-            name="Forecast (next 24h)",
+            name="Today’s guess (next 24h)",
             mode="markers",
             marker=dict(size=14, color=GOLD, line=dict(width=2, color="#0B1020")),
         )
@@ -394,22 +559,25 @@ else:
             y=float(threshold),
             line_dash="dash",
             line_color=RED_DOWN,
-            annotation_text="alert line",
+            annotation_text="unusually jumpy line",
             annotation_font_color=RED_DOWN,
         )
-    apply_chart_layout(vol_fig, 420, "Hourly volatility")
+    apply_chart_layout(vol_fig, 420, "Hour-by-hour jumpiness")
     st.plotly_chart(vol_fig, use_container_width=True)
 
-st.divider()
-st.header("Predicted vs actual")
-st.caption(
-    "The serving model scored on recent hours. Actual 24h realized vol is only known after those 24 hours settle. "
-    "This is shadow scoring of the frozen artifact, not a new walk-forward."
+section_head(
+    "Did past guesses match what happened?",
+    "Gold line = what the model guessed. Blue line = what actually happened after 24 hours. "
+    "Shaded area = the model’s “likely range.” We can only check hours that already finished.",
 )
 
 points = pd.DataFrame(score_payload.get("points") or [])
 if points.empty:
-    st.info("No predicted-vs-actual series yet. Need features plus a loaded model.")
+    note_box(
+        "Nothing to check yet",
+        "We need saved features and a loaded model before we can compare guesses with what really happened.",
+        "yellow",
+    )
 else:
     points["time"] = pd.to_datetime(points["time"])
     s1, s2, s3, s4 = st.columns(4)
@@ -417,14 +585,14 @@ else:
     rmse = score_metrics.get("rmse")
     coverage = score_metrics.get("coverage_95")
     n_settled = score_metrics.get("n_settled") or score_metrics.get("n")
-    s1.metric("Shadow MAE", f"{mae:.4%}" if isinstance(mae, (int, float)) else "n/a")
-    s2.metric("Shadow RMSE", f"{rmse:.4%}" if isinstance(rmse, (int, float)) else "n/a")
+    s1.metric("Average miss", f"{mae:.4%}" if isinstance(mae, (int, float)) else "n/a")
+    s2.metric("Typical miss size", f"{rmse:.4%}" if isinstance(rmse, (int, float)) else "n/a")
     s3.metric(
-        "Band coverage",
+        "Hours inside the range",
         f"{coverage:.0%}" if isinstance(coverage, (int, float)) else "n/a",
-        help="Share of settled hours where realized vol sat inside the ±1.96σ residual band.",
+        help="Share of finished hours where the real jumpiness sat inside the shaded likely range.",
     )
-    s4.metric("Settled hours", f"{int(n_settled)}" if n_settled else "n/a")
+    s4.metric("Hours we can check", f"{int(n_settled)}" if n_settled else "n/a")
 
     score_fig = go.Figure()
     if points["lo"].notna().any() and points["hi"].notna().any():
@@ -432,7 +600,7 @@ else:
             go.Scatter(
                 x=points["time"],
                 y=points["hi"],
-                name="Band high",
+                name="Range high",
                 mode="lines",
                 line=dict(width=0),
                 showlegend=False,
@@ -443,7 +611,7 @@ else:
             go.Scatter(
                 x=points["time"],
                 y=points["lo"],
-                name="≈95% residual band",
+                name="Likely range",
                 mode="lines",
                 line=dict(width=0),
                 fill="tonexty",
@@ -454,7 +622,7 @@ else:
         go.Scatter(
             x=points["time"],
             y=points["predicted"],
-            name="Predicted",
+            name="Guess",
             mode="lines",
             line=dict(color=GOLD, width=2),
         )
@@ -463,20 +631,39 @@ else:
         go.Scatter(
             x=points["time"],
             y=points["actual"],
-            name="Actual (settled)",
+            name="What really happened",
             mode="lines",
             line=dict(color="#6C8CFF", width=2),
             connectgaps=False,
         )
     )
-    apply_chart_layout(score_fig, 420, "Hourly volatility")
+    apply_chart_layout(score_fig, 420, "Hour-by-hour jumpiness")
     st.plotly_chart(score_fig, use_container_width=True)
     if isinstance(coverage, (int, float)):
-        band_color = FOCUS_RED if coverage < 0.90 else FOCUS_YELLOW
-        focus_note(
-            f"This range caught {coverage:.0%} of settled hours in this window (target 95%). "
-            "A gap means the band is imperfect — not a reason to trade harder.",
-            band_color,
-        )
+        pct = f"{coverage:.0%}"
+        if coverage >= 0.95:
+            note_box(
+                "How well the range worked",
+                f"The shaded range covered {pct} of the hours we can already check. We aimed for about 95%. "
+                "So the range was a bit wide — extra careful, not a buy or sell tip.",
+                "blue",
+            )
+        elif coverage >= 0.90:
+            note_box(
+                "How well the range worked",
+                f"The shaded range covered {pct} of the hours we can already check. We aimed for about 95%. "
+                "Close, but it missed a few hours. That is not a reason to trade.",
+                "yellow",
+            )
+        else:
+            note_box(
+                "How well the range worked",
+                f"The shaded range covered only {pct} of the hours we can already check. We aimed for about 95%. "
+                "It missed more hours than we wanted. That is not a reason to trade.",
+                "red",
+            )
 
-st.caption(f"Last update {datetime.now(timezone.utc).strftime('%H:%M:%S UTC')}")
+st.markdown(
+    f'<div class="footer-bar">Last update {datetime.now(timezone.utc).strftime("%H:%M:%S UTC")}</div>',
+    unsafe_allow_html=True,
+)
