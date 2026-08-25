@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import sys
 from datetime import datetime, timezone
+from html import escape
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -53,6 +54,9 @@ PLOT_AXIS = dict(gridcolor="#243044", zeroline=False, linecolor="#243044")
 GOLD = "#E8B931"
 TEAL_UP = "#2ECC9A"
 RED_DOWN = "#F07178"
+FOCUS_BLUE = "#6EA8FF"
+FOCUS_YELLOW = "#E8B931"
+FOCUS_RED = "#F07178"
 
 st.set_page_config(
     page_title="Crypto Vol Forecast",
@@ -166,7 +170,17 @@ def vol_label(daily: float) -> str:
     return "High"
 
 
+def focus_note(text: str, color: str) -> None:
+    st.markdown(
+        f'<p style="color:{color};font-weight:700;font-size:1.08rem;line-height:1.45;'
+        f'margin:0.55rem 0 0.75rem 0;">{text}</p>',
+        unsafe_allow_html=True,
+    )
+
+
 def apply_chart_layout(fig: go.Figure, height: int, y_title: str) -> go.Figure:
+    title_font = dict(color="#E8ECF4", family="Segoe UI, Inter, sans-serif", size=14)
+    tick_font = dict(color="#E8ECF4", family="Segoe UI, Inter, sans-serif", size=12)
     fig.update_layout(
         height=height,
         paper_bgcolor="rgba(0,0,0,0)",
@@ -174,10 +188,19 @@ def apply_chart_layout(fig: go.Figure, height: int, y_title: str) -> go.Figure:
         font=PLOT_FONT,
         margin=dict(l=16, r=16, t=24, b=16),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0, bgcolor="rgba(0,0,0,0)"),
-        xaxis=dict(title="Time (UTC)", **PLOT_AXIS, rangeslider=dict(visible=False)),
-        yaxis=dict(title=y_title, **PLOT_AXIS),
         hovermode="x unified",
         showlegend=True,
+    )
+    fig.update_xaxes(
+        title=dict(text="<b>Time (UTC)</b>", font=title_font),
+        tickfont=tick_font,
+        **PLOT_AXIS,
+        rangeslider=dict(visible=False),
+    )
+    fig.update_yaxes(
+        title=dict(text=f"<b>{y_title}</b>", font=title_font),
+        tickfont=tick_font,
+        **PLOT_AXIS,
     )
     return fig
 
@@ -217,8 +240,8 @@ with st.sidebar:
         st.info("Your selection is not applied yet. Click **Update forecast**.")
 
     st.divider()
-    st.caption("This app forecasts how jumpy the next 24 hours may be. It does not predict whether price will go up or down.")
-    st.caption("Not financial advice. Forecasts can be wrong. Do not trade solely on this number.")
+    focus_note("This app forecasts how jumpy the next 24 hours may be. It does not predict whether price will go up or down.", FOCUS_YELLOW)
+    focus_note("Not financial advice. Forecasts can be wrong. Do not trade solely on this number.", FOCUS_RED)
     st.caption("Streamlit Community Cloud demo — may sleep after idle time. Not a 24/7 service.")
 
 symbol = st.session_state.view_symbol
@@ -249,25 +272,15 @@ close = prediction.get("close")
 as_of = fmt_ts(prediction.get("event_timestamp"))
 mood = vol_label(daily_vol)
 model_ok = bool(health.get("model_loaded"))
-model_version = prediction.get("model_version") or health.get("model_version") or model_info.get("version") or "unknown"
-stale = bool(prediction.get("stale"))
-hours_lag = prediction.get("hours_lag")
 score_metrics = score_payload.get("metrics") or {}
 
 st.title(f"{meta['name']} volatility forecast")
 st.subheader(f"{symbol} · next 24 hours")
 st.caption(
     f"Based on the {as_of} hourly candle. "
-    f"{'Using the trained model.' if model_ok else 'Using the persistence baseline (model not loaded).'} "
-    f"Model `{model_version}`. Serve mode: {serve_mode}. This is not live tick data."
+    f"{'Using the trained model.' if model_ok else 'Using the persistence baseline (model not loaded).'}"
 )
-
-if stale:
-    lag_txt = f"{hours_lag:.1f} hours behind UTC" if isinstance(hours_lag, (int, float)) else "timestamp is stale"
-    st.warning(
-        f"This snapshot is not fresh ({lag_txt}). "
-        "Run an incremental Binance fetch before treating the number as current. Not a live tick."
-    )
+focus_note("This is not live tick data.", FOCUS_YELLOW)
 
 st.divider()
 st.header("Forecast")
@@ -284,26 +297,32 @@ else:
     m4.metric("Vs alert line", "n/a")
 
 if daily_lo is not None and daily_hi is not None:
-    st.caption(
-        f"Residual interval (±1.96σ from walk-forward errors): **{float(daily_lo):.2%} – {float(daily_hi):.2%}** "
-        "1-day equivalent. This is not a conformal interval."
+    focus_note(
+        f"Typical 1-day range from past forecast errors: {float(daily_lo):.2%} – {float(daily_hi):.2%}. "
+        "This is a wide statistical band, not a guarantee.",
+        FOCUS_YELLOW,
     )
 
 if alert:
-    st.warning(
-        prediction.get("alert_reason")
-        or "Predicted volatility is at or above the 90th percentile of the last 30 days."
+    focus_note(
+        escape(
+            prediction.get("alert_reason")
+            or "Predicted volatility is at or above the 90th percentile of the last 30 days."
+        ),
+        FOCUS_RED,
     )
 else:
-    st.success(
-        f"The model expects about a **{daily_vol:.1%}** typical daily move. "
-        "That is below this coin’s high-volatility alert line."
+    focus_note(
+        f"The model expects about a {daily_vol:.1%} typical daily move. "
+        "That is below this coin’s high-volatility alert line.",
+        FOCUS_BLUE,
     )
 
-st.write(
-    f"If this forecast is right, {meta['name']}'s hourly moves over the next day "
-    f"should look about as jumpy as a **{daily_vol:.1%}** one-day standard deviation. "
-    "This is not a prediction of the next price."
+focus_note(
+    f"If this forecast is right, {escape(meta['name'])}'s hourly moves over the next day "
+    f"should look about as jumpy as a {daily_vol:.1%} one-day standard deviation. "
+    "This is not a prediction of the next price.",
+    FOCUS_BLUE,
 )
 
 if threshold:
@@ -452,26 +471,12 @@ else:
     )
     apply_chart_layout(score_fig, 420, "Hourly volatility")
     st.plotly_chart(score_fig, use_container_width=True)
-    claimed = score_payload.get("claimed_coverage")
-    if isinstance(coverage, (int, float)) and claimed:
-        st.caption(
-            f"Claimed band coverage {claimed:.0%}; empirical coverage on this window {coverage:.0%}. "
-            "A large gap means the Gaussian residual band is miscalibrated — not a reason to trade harder."
+    if isinstance(coverage, (int, float)):
+        band_color = FOCUS_RED if coverage < 0.90 else FOCUS_YELLOW
+        focus_note(
+            f"This range caught {coverage:.0%} of settled hours in this window (target 95%). "
+            "A gap means the band is imperfect — not a reason to trade harder.",
+            band_color,
         )
 
-st.divider()
-features = prediction.get("features") or {}
-with st.expander("What the model saw this hour"):
-    st.caption("These 20 numbers are the only inputs. Raw dollar prices are not used.")
-    rows = []
-    for key, value in features.items():
-        title, help_text = FEATURE_GUIDE.get(key, (key, ""))
-        rows.append({"Feature": title, "Key": key, "Value": value, "Meaning": help_text})
-    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
-
-st.caption(
-    f"Last update {datetime.now(timezone.utc).strftime('%H:%M:%S UTC')}  ·  "
-    f"feature source: {prediction.get('feature_source') or 'n/a'}  ·  "
-    f"prediction source: {prediction.get('prediction_source') or 'n/a'}  ·  "
-    f"model: {model_version}"
-)
+st.caption(f"Last update {datetime.now(timezone.utc).strftime('%H:%M:%S UTC')}")
