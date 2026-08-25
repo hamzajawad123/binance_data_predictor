@@ -335,6 +335,10 @@ def apply_chart_layout(fig: go.Figure, height: int, y_title: str) -> go.Figure:
     return fig
 
 
+def select_coin(symbol_key: str) -> None:
+    st.session_state.view_symbol = symbol_key
+
+
 if "view_symbol" not in st.session_state:
     st.session_state.view_symbol = SYMBOLS[0]
 if "view_window" not in st.session_state:
@@ -360,13 +364,14 @@ nav_cols = st.columns(4)
 for col, symbol_key in zip(nav_cols, SYMBOLS):
     with col:
         active = st.session_state.view_symbol == symbol_key
-        if st.button(
+        st.button(
             COIN_META[symbol_key]["name"],
             type="primary" if active else "secondary",
             use_container_width=True,
             key=f"nav_{symbol_key}",
-        ):
-            st.session_state.view_symbol = symbol_key
+            on_click=select_coin,
+            args=(symbol_key,),
+        )
 
 st.radio(
     "How much history to show on the charts",
