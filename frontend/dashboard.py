@@ -32,6 +32,8 @@ PLOT_AXIS = dict(gridcolor="#243044", zeroline=False, linecolor="#243044")
 GOLD = "#E8B931"
 TEAL_UP = "#2ECC9A"
 RED_DOWN = "#F07178"
+RANGE_VIOLET = "#B794F6"
+RANGE_FILL = "rgba(183, 148, 246, 0.28)"
 
 st.set_page_config(
     page_title="Crypto jumpiness forecast",
@@ -97,7 +99,7 @@ st.markdown(
         justify-content: center;
       }
       .brand-title { color: #E8ECF4; font-size: 1.12rem; font-weight: 700; line-height: 1.2; }
-      .brand-sub { color: #8B97B0; font-size: 0.86rem; margin-top: 0.15rem; }
+      .brand-sub { color: #E8ECF4; font-size: 0.86rem; margin-top: 0.15rem; font-weight: 700; }
       .nav-chip {
         background: rgba(110, 168, 255, 0.12);
         border: 1px solid rgba(110, 168, 255, 0.35);
@@ -123,11 +125,21 @@ st.markdown(
         margin: 0 0 0.28rem 0;
       }
       .section-head p {
-        color: #8B97B0;
-        font-size: 0.92rem;
+        color: #E8ECF4;
+        font-size: 0.95rem;
+        font-weight: 700;
         margin: 0;
-        line-height: 1.45;
+        line-height: 1.5;
       }
+      .section-head ul {
+        margin: 0.45rem 0 0 1.15rem;
+        padding: 0;
+        color: #E8ECF4;
+        font-size: 0.95rem;
+        font-weight: 700;
+        line-height: 1.55;
+      }
+      .section-head li { margin: 0.15rem 0; }
 
       .note-card {
         border-radius: 14px;
@@ -145,7 +157,7 @@ st.markdown(
       }
       .note-body {
         font-size: 1.02rem;
-        font-weight: 600;
+        font-weight: 700;
         line-height: 1.5;
       }
       .note-blue {
@@ -169,8 +181,9 @@ st.markdown(
         border: 1px solid #243044;
         border-radius: 14px;
         padding: 0.85rem 1rem;
-        color: #C5CDDC;
+        color: #E8ECF4;
         font-size: 0.92rem;
+        font-weight: 700;
         line-height: 1.5;
         margin-bottom: 0.7rem;
       }
@@ -296,16 +309,14 @@ def note_box(title: str, body: str, tone: str) -> None:
     )
 
 
-def section_head(title: str, subtitle: str) -> None:
-    st.markdown(
-        f"""
-        <div class="section-head">
-          <h2>{escape(title)}</h2>
-          <p>{escape(subtitle)}</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+def section_head(title: str, subtitle: str | None = None, bullets: list[str] | None = None) -> None:
+    parts = [f"<h2>{escape(title)}</h2>"]
+    if subtitle:
+        parts.append(f"<p>{escape(subtitle)}</p>")
+    if bullets:
+        items = "".join(f"<li>{escape(item)}</li>" for item in bullets)
+        parts.append(f"<ul>{items}</ul>")
+    st.markdown(f'<div class="section-head">{"".join(parts)}</div>', unsafe_allow_html=True)
 
 
 def apply_chart_layout(fig: go.Figure, height: int, y_title: str) -> go.Figure:
@@ -433,13 +444,11 @@ threshold = prediction.get("alert_threshold")
 close = prediction.get("close")
 as_of = fmt_ts(prediction.get("event_timestamp"))
 mood = vol_label(daily_vol)
-model_ok = bool(health.get("model_loaded"))
 score_metrics = score_payload.get("metrics") or {}
-source_line = "using the trained model" if model_ok else "using a simple backup method because the trained model is not loaded"
 
 section_head(
     f"{meta['name']} · next 24 hours",
-    f"{symbol}  ·  based on the {as_of} hourly candle  ·  {source_line}  ·  market feel: {mood}",
+    f"{symbol}  ·  based on the {as_of} hourly candle  ·  market feel: {mood}",
 )
 note_box(
     "Not a live ticker",
@@ -528,8 +537,11 @@ else:
 
 section_head(
     "How jumpy it has been",
-    "Blue line = how jumpy the last 24 hours really were. Gold dot = today’s guess for the next 24 hours. "
-    "Dashed red line = the unusually-jumpy warning line.",
+    bullets=[
+        "Blue line = how jumpy the last 24 hours really were.",
+        "Gold dot = today’s guess for the next 24 hours.",
+        "Dashed red line = the unusually-jumpy warning line.",
+    ],
 )
 
 realized = pd.DataFrame(candle_payload.get("realized_vol", []))
@@ -573,7 +585,7 @@ else:
 section_head(
     "Did past guesses match what happened?",
     "Gold line = what the model guessed. Blue line = what actually happened after 24 hours. "
-    "Shaded area = the model’s “likely range.” We can only check hours that already finished.",
+    "Purple shaded area = the likely range. We can only check hours that already finished.",
 )
 
 points = pd.DataFrame(score_payload.get("points") or [])
@@ -618,9 +630,9 @@ else:
                 y=points["lo"],
                 name="Likely range",
                 mode="lines",
-                line=dict(width=0),
+                line=dict(width=0, color=RANGE_VIOLET),
                 fill="tonexty",
-                fillcolor="rgba(232, 185, 49, 0.14)",
+                fillcolor=RANGE_FILL,
             )
         )
     score_fig.add_trace(
