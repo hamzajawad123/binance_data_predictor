@@ -638,9 +638,6 @@ Use Python 3.11 to match CI. Full tests need `requirements.txt` (includes `feast
 **Docker Hub job skipped**  
 The workflow skips image push if `DOCKERHUB_USERNAME` or `DOCKERHUB_TOKEN` is empty.
 
-**Node 20 deprecation annotation on Actions**  
-Warning from `actions/checkout@v4` / `actions/setup-python@v5`. It is not a test failure by itself.
-
 **Dependency install errors (general)**  
 Upgrade pip (`python -m pip install --upgrade pip`) and retry inside an activated `.venv`.
 
