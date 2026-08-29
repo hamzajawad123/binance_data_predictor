@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend ./backend
 COPY frontend ./frontend
+COPY cloud ./cloud
 COPY pyproject.toml .
 COPY .streamlit ./.streamlit
 

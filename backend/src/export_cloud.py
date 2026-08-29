@@ -36,9 +36,11 @@ def export_cloud(days: int = 90, dest: Path | None = None) -> Path:
     raw.to_parquet(dest / "raw.parquet", index=False)
 
     model_src = MODELS_DIR / "model.joblib"
+    dest_model = dest / "model.joblib"
     if not model_src.exists():
         raise RuntimeError(f"Missing {model_src}.")
-    shutil.copy2(model_src, dest / "model.joblib")
+    if model_src.resolve() != dest_model.resolve():
+        shutil.copy2(model_src, dest_model)
 
     cols_src = MODELS_DIR / "feature_columns.json"
     if cols_src.exists():

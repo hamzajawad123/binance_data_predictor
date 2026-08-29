@@ -10,6 +10,7 @@ services:
       MLFLOW_TRACKING_URI: sqlite:///mlflow.db
     volumes:
       - ./data:/app/data
+      - ./cloud:/app/cloud
       - ./mlruns:/app/mlruns
       - ./models:/app/models
       - ./logs:/app/logs
@@ -24,6 +25,10 @@ services:
       - .env
     environment:
       API_URL: http://api:8000
+    volumes:
+      - ./cloud:/app/cloud
+      - ./data:/app/data
+      - ./models:/app/models
     depends_on:
       - api
     restart: unless-stopped
