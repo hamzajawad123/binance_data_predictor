@@ -10,6 +10,8 @@ It forecasts **how jumpy the next 24 hours may be**. It does **not** predict whe
 
 A committed `cloud/` bundle (about 90 days of data plus `model.joblib`) lets you run the dashboard after a clone, without fetching the full history first.
 
+**Live dashboard (no install):** [https://binance-data-predictor.streamlit.app](https://binance-data-predictor.streamlit.app)
+
 ---
 
 ## Table of Contents
@@ -477,7 +479,41 @@ Image name in Compose: `${DOCKER_HUB_USERNAME:-yourusername}/crypto-ops-fastapi:
 
 `Dockerfile` is `python:3.11-slim`, installs `libgomp1`, copies `backend/`, `frontend/`, `cloud/`, exposes **8000**, CMD uvicorn on `0.0.0.0:8000`.
 
-Local build/push (replace the username with your Docker Hub user):
+### Pull the image from Docker Hub and run it
+
+GitHub Actions pushes `YOUR_DOCKERHUB_USERNAME/crypto-ops-fastapi:latest` (the username is the `DOCKERHUB_USERNAME` repository secret). You do not need to clone the repo to run the API.
+
+1. Install Docker Desktop and start it.
+2. Pull the image (replace the username with your Docker Hub account):
+
+```bash
+docker pull YOUR_DOCKERHUB_USERNAME/crypto-ops-fastapi:latest
+```
+
+3. Run the API (the image already includes the `cloud/` snapshot):
+
+```bash
+docker run --rm -p 8000:8000 YOUR_DOCKERHUB_USERNAME/crypto-ops-fastapi:latest
+```
+
+4. In a browser, open:
+
+- Health: http://localhost:8000/health
+- API docs: http://localhost:8000/docs
+
+Stop the container with **Ctrl+C**.
+
+To run the Streamlit UI from the **same image** (second terminal):
+
+```bash
+docker run --rm -p 8501:8501 -e API_URL=http://host.docker.internal:8000 YOUR_DOCKERHUB_USERNAME/crypto-ops-fastapi:latest streamlit run frontend/dashboard.py --server.port 8501 --server.address 0.0.0.0
+```
+
+Then open http://localhost:8501 . Keep the API container running. `host.docker.internal` lets the UI container reach the API on your machine (Docker Desktop on Windows and macOS).
+
+For a public dashboard without Docker, use the live app: [https://binance-data-predictor.streamlit.app](https://binance-data-predictor.streamlit.app)
+
+Local build/push (maintainers):
 
 ```bash
 docker build -t YOUR_DOCKERHUB_USERNAME/crypto-ops-fastapi:latest .
@@ -648,6 +684,7 @@ Upgrade pip (`python -m pip install --upgrade pip`) and retry inside an activate
 | Resource | URL |
 | --- | --- |
 | GitHub repository | [https://github.com/hamzajawad123/binance_data_predictor](https://github.com/hamzajawad123/binance_data_predictor) |
+| Live dashboard | [https://binance-data-predictor.streamlit.app](https://binance-data-predictor.streamlit.app) |
 | Issue tracker | [https://github.com/hamzajawad123/binance_data_predictor/issues](https://github.com/hamzajawad123/binance_data_predictor/issues) |
 | Actions | [https://github.com/hamzajawad123/binance_data_predictor/actions](https://github.com/hamzajawad123/binance_data_predictor/actions) |
 | TreeSHAP notes | [docs/SHAP.md](docs/SHAP.md) |
