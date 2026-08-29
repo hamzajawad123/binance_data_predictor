@@ -1,7 +1,7 @@
 services:
   api:
     build: .
-    image: ${DOCKER_HUB_USERNAME:-yourusername}/crypto-ops-fastapi:latest
+    image: ${DOCKER_HUB_USERNAME:-hamzajawad}/crypto-ops-fastapi:latest
     ports:
       - "${API_PORT:-8000}:8000"
     env_file:

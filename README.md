@@ -300,7 +300,7 @@ Variables from [`.env.example`](.env.example):
 | `MODEL_NAME` | Default `crypto_vol_24h` |
 | `HOLDOUT_DAYS` | Train/eval holdout (default `60`) |
 | `VOL_ALERT_PERCENTILE` | Alert line percentile (default `90`) |
-| `DOCKER_HUB_USERNAME` | Compose image prefix (placeholder `yourusername`) |
+| `DOCKER_HUB_USERNAME` | Compose image prefix (default in example: `hamzajawad`) |
 | `IMAGE_NAME` | Example `crypto-ops-fastapi` (workflow image name is `crypto-ops-fastapi:latest`) |
 | `API_HOST` | Example `0.0.0.0` |
 | `API_PORT` | Compose host port mapping default `8000` |
@@ -475,25 +475,25 @@ docker compose up --build
 
 The Streamlit service sets `API_URL=http://api:8000`.
 
-Image name in Compose: `${DOCKER_HUB_USERNAME:-yourusername}/crypto-ops-fastapi:latest`.
+Image name in Compose: `${DOCKER_HUB_USERNAME:-hamzajawad}/crypto-ops-fastapi:latest`.
 
 `Dockerfile` is `python:3.11-slim`, installs `libgomp1`, copies `backend/`, `frontend/`, `cloud/`, exposes **8000**, CMD uvicorn on `0.0.0.0:8000`.
 
 ### Pull the image from Docker Hub and run it
 
-GitHub Actions pushes `YOUR_DOCKERHUB_USERNAME/crypto-ops-fastapi:latest` (the username is the `DOCKERHUB_USERNAME` repository secret). You do not need to clone the repo to run the API.
+GitHub Actions pushes [`hamzajawad/crypto-ops-fastapi:latest`](https://hub.docker.com/r/hamzajawad/crypto-ops-fastapi). You do not need to clone the repo to run the API.
 
 1. Install Docker Desktop and start it.
-2. Pull the image (replace the username with your Docker Hub account):
+2. Pull the image:
 
 ```bash
-docker pull YOUR_DOCKERHUB_USERNAME/crypto-ops-fastapi:latest
+docker pull hamzajawad/crypto-ops-fastapi:latest
 ```
 
 3. Run the API (the image already includes the `cloud/` snapshot):
 
 ```bash
-docker run --rm -p 8000:8000 YOUR_DOCKERHUB_USERNAME/crypto-ops-fastapi:latest
+docker run --rm -p 8000:8000 hamzajawad/crypto-ops-fastapi:latest
 ```
 
 4. In a browser, open:
@@ -506,7 +506,7 @@ Stop the container with **Ctrl+C**.
 To run the Streamlit UI from the **same image** (second terminal):
 
 ```bash
-docker run --rm -p 8501:8501 -e API_URL=http://host.docker.internal:8000 YOUR_DOCKERHUB_USERNAME/crypto-ops-fastapi:latest streamlit run frontend/dashboard.py --server.port 8501 --server.address 0.0.0.0
+docker run --rm -p 8501:8501 -e API_URL=http://host.docker.internal:8000 hamzajawad/crypto-ops-fastapi:latest streamlit run frontend/dashboard.py --server.port 8501 --server.address 0.0.0.0
 ```
 
 Then open http://localhost:8501 . Keep the API container running. `host.docker.internal` lets the UI container reach the API on your machine (Docker Desktop on Windows and macOS).
@@ -516,8 +516,8 @@ For a public dashboard without Docker, use the live app: [https://binance-data-p
 Local build/push (maintainers):
 
 ```bash
-docker build -t YOUR_DOCKERHUB_USERNAME/crypto-ops-fastapi:latest .
-docker push YOUR_DOCKERHUB_USERNAME/crypto-ops-fastapi:latest
+docker build -t hamzajawad/crypto-ops-fastapi:latest .
+docker push hamzajawad/crypto-ops-fastapi:latest
 ```
 
 ---
@@ -530,7 +530,7 @@ Workflow file: [`.github/workflows/mlops_pipeline.yml`](.github/workflows/mlops_
 | --- | --- |
 | Push / pull request (not the 6h cron) | `tests`: `pip install -r requirements.txt` then `pytest -q` |
 | Cron `0 */6 * * *` (UTC) or **Run workflow** | `refresh_cloud`: incremental Binance fetch from `cloud/`, rebuild features, `export_cloud --days 90`, commit `cloud/` |
-| Push to `main` (after tests) | `docker`: build and push `DOCKERHUB_USERNAME/crypto-ops-fastapi:latest` if secrets exist |
+| Push to `main` (after tests) | `docker`: build and push `hamzajawad/crypto-ops-fastapi:latest` if secrets exist |
 
 Repository secrets used by the workflow:
 
@@ -685,6 +685,7 @@ Upgrade pip (`python -m pip install --upgrade pip`) and retry inside an activate
 | --- | --- |
 | GitHub repository | [https://github.com/hamzajawad123/binance_data_predictor](https://github.com/hamzajawad123/binance_data_predictor) |
 | Live dashboard | [https://binance-data-predictor.streamlit.app](https://binance-data-predictor.streamlit.app) |
+| Docker Hub image | [https://hub.docker.com/r/hamzajawad/crypto-ops-fastapi](https://hub.docker.com/r/hamzajawad/crypto-ops-fastapi) |
 | Issue tracker | [https://github.com/hamzajawad123/binance_data_predictor/issues](https://github.com/hamzajawad123/binance_data_predictor/issues) |
 | Actions | [https://github.com/hamzajawad123/binance_data_predictor/actions](https://github.com/hamzajawad123/binance_data_predictor/actions) |
 | TreeSHAP notes | [docs/SHAP.md](docs/SHAP.md) |
