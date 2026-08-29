@@ -1,0 +1,111 @@
+name: MLOps Pipeline
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Unit tests
+        run: pytest -q
+
+  refresh_cloud:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install cloud dependencies
+        run: pip install -r requirements-cloud.txt
+
+      - name: Seed working copies from the committed cloud bundle
+        run: |
+          mkdir -p data models
+          cp cloud/raw.parquet data/raw.parquet
+          cp cloud/features.parquet data/features.parquet
+          cp cloud/model.joblib models/model.joblib
+          if [ -f cloud/feature_columns.json ]; then
+            cp cloud/feature_columns.json models/feature_columns.json
+          fi
+
+      - name: Incremental Binance fetch, rebuild features, export 90-day snapshot
+        env:
+          RAW_PATH: data/raw.parquet
+          FEATURES_PATH: data/features.parquet
+          MODELS_DIR: models
+        run: |
+          python -m backend.src.data_collection --incremental --output data/raw.parquet
+          python -m backend.src.eda_feature_eng --raw data/raw.parquet --output data/features.parquet
+          python -m backend.src.export_cloud --days 90
+
+      - name: Commit refreshed cloud snapshot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cloud/
+          if git diff --staged --quiet; then
+            echo "Cloud snapshot already current."
+            exit 0
+          fi
+          git commit -m "Refresh 90-day cloud snapshot from Binance."
+          git push
+
+  docker:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: tests
+    steps:
+      - name: Check Docker Hub secrets
+        id: creds
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          if [ -z "$DOCKERHUB_USERNAME" ] || [ -z "$DOCKERHUB_TOKEN" ]; then
+            echo "has_creds=false" >> "$GITHUB_OUTPUT"
+            echo "DOCKERHUB_USERNAME / DOCKERHUB_TOKEN not set; skipping image push."
+          else
+            echo "has_creds=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.creds.outputs.has_creds == 'true'
+
+      - name: Log in to Docker Hub
+        if: steps.creds.outputs.has_creds == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push FastAPI image
+        if: steps.creds.outputs.has_creds == 'true'
+        run: |
+          IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/crypto-ops-fastapi:latest"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
