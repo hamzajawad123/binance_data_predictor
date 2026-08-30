@@ -55,6 +55,7 @@ jobs:
 
       - name: Incremental Binance fetch, rebuild features, export 90-day snapshot
         env:
+          BINANCE_BASE_URL: https://data-api.binance.vision
           RAW_PATH: data/raw.parquet
           FEATURES_PATH: data/features.parquet
           MODELS_DIR: models
